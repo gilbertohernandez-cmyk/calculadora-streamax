@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>N9M Bitrate Calculator H.265</title>
+  <style>
+    body {
+      font-size: 10pt;
+    }
+    table {
+      border-right: 1px solid #9393FF;border-bottom: 1px solid #9393FF;
+    }
+		td {
+      padding: 4px; background: white; 
+      border-left: 1px solid #9393FF; border-top: 1px solid #9393FF;
+    }
+		.tdTitle{
+			padding: 4px; background: #E0E0E0; font:bold;
+      border-left: 1px solid #9393FF; border-top: 1px solid #9393FF;
+		}
+  </style>
+  <script type="text/javascript">	
+		var base={
+			rate:{
+				QCIF:["307","269","250","230","211","192","173","154"],
+				CIF:["614","461","384","307","264","210","187","168"],
+				HD1:["922","768","614","461","384","336","300","270"],
+				D1:["1229","922","768","614","540","480","432","384"],
+				WCIF:["799","599","499","399","343","273","243","218"],
+				WHD1:["1198","998","799","599","499","437","390","351"],
+				WD1:["1597","1198","998","799","702","624","562","499"],
+				"720P":["3584","3072","2560","2048","1536","1024","512","384"],
+				"1080P":["4608","4096","3584","3072","2560","1536","1024","512"]
+			},resolution:{
+				QCIF:"P176*144 / N160*120",
+				CIF:"P352*288 / N352*240",
+				HD1:"P704*288 / N704*240",
+				D1:"P704*576 / N704*480",
+				WCIF:"P480*288 / N480*240",
+				WHD1:"P960*288 / N960*240",
+				WD1:"P960*576 / N960*480",
+			        "720P":"1280*720",
+				"1080P":"1920*1080"
+			}
+		};
+		window.onload=function(){
+			document.getElementById("bAddChannel").onclick=AddChannel;
+		};	
+		function AddChannel(){
+			var r=document.getElementById("TB").insertRow(-1);
+			var prer=document.getElementById("TB").rows[r.rowIndex-1];
+			for(var i=0;i<9;i++) r.insertCell(-1);
+			{//No. & size
+				r.cells[7].style.cssText="color:red;";
+				r.cells[0].innerText=r.rowIndex-2;
+			};
+			{//Resolution
+				r.resolution=document.createElement("Select"); r.cells[1].appendChild(r.resolution);
+				r.resolution.onchange=function(){
+					this.resolutioncomm.innerText=base.resolution[this.options[this.selectedIndex].value];
+					size();				
+				};
+				for(var k in base.resolution){
+					var opt=document.createElement("OPTION"); r.resolution.add(opt);
+					opt.value=k; opt.text=k;
+				};
+				r.resolution.resolutioncomm=document.createElement("LABEL");
+				r.resolution.resolutioncomm.style.cssText="padding:2px;";
+				r.cells[1].appendChild(r.resolution.resolutioncomm);
+				r.resolution.resolutioncomm.innerText=base.resolution[r.resolution.options[r.resolution.selectedIndex].value];
+				if(prer.resolution!=null)r.resolution.selectedIndex=prer.resolution.selectedIndex;
+			};
+			{//PAL/NTSC
+				r.pn=document.createElement("Select"); r.cells[2].appendChild(r.pn);
+				r.pn.onchange=size;
+				r.pn.innerHTML="<option value=PAL>PAL</option>"
+					+"<option value=NTSC>NTSC</option>";
+				if(prer.pn!=null)r.pn.selectedIndex=prer.pn.selectedIndex;
+			};
+			{//Quality
+				r.quality=document.createElement("Select"); r.cells[3].appendChild(r.quality);
+				r.quality.onchange=size;
+				for(var i=1;i<=8;i++){
+					var opt=document.createElement("OPTION"); r.quality.add(opt);
+					opt.value=opt.text=i;
+				};
+				if(prer.quality!=null)r.quality.selectedIndex=prer.quality.selectedIndex;
+			};
+			{//Frame
+				r.frame=document.createElement("INPUT"); r.cells[4].appendChild(r.frame);
+				r.frame.onchange=size;  r.frame.type="TEXT";
+				r.frame.value=25;	r.frame.style.width="35px";
+				if(prer.frame!=null)r.frame.value=prer.frame.value;
+			};
+			{//Duration
+				r.duration=document.createElement("INPUT"); r.cells[5].appendChild(r.duration);
+				r.duration.onchange=size;  r.duration.type="TEXT";
+				r.duration.value=1;	r.duration.style.width="35px";			
+				if(prer.duration!=null)r.duration.value=prer.duration.value;
+			};			
+			r.cells[6].innerText="0 b"; r.cells[7].innerText="0 MB";		
+			{//RemoveChannel
+				r.btn=document.createElement("BUTTON"); r.cells[8].appendChild(r.btn);
+				r.btn.type="TEXT"; r.btn.innerText="Remove Channel"; r.btn.row=r;
+				r.btn.onclick=function(){
+					document.getElementById("TB").deleteRow(this.row.rowIndex);
+					for(var i=2;i<document.getElementById("TB").rows.length;i++){
+						var rr=document.getElementById("TB").rows[i];
+						rr.cells[0].innerText=rr.rowIndex-2;
+					};
+					size();
+				};
+			};
+			
+			size();
+		};
+		function size(){
+			var resultall=0;
+			for(var i=3;i<document.getElementById("TB").rows.length;i++){
+				var r=document.getElementById("TB").rows[i];
+				var resolution=r.resolution.options[r.resolution.selectedIndex].value;
+				var pn=r.pn.options[r.pn.selectedIndex].value;
+				var quality=r.quality.options[r.quality.selectedIndex].value;
+				var frame=r.frame.value; var duration=r.duration.value;
+				r.cells[6].innerText=resolution=base.rate[resolution][quality-1];
+				var p=resolution.indexOf("*");
+				if(p>0)resolution=resolution.substr(0,p)*resolution.substr(p+1);
+				if(isNaN(frame)){
+					alert("Please Input Frame (1-30) ! \r\n\r\nLine is : "+(i-2)); return;
+				};
+				frame=parseInt(frame);
+				if(frame<1||frame>30){
+					alert("Please Input Frame (1-30) ! \r\n\r\nLine is : "+(i-2)); return;
+				};
+				if(isNaN(duration)){
+					alert("Please Input Duration (hour) ! \r\n\r\nLine is : "+(i-2)); return;
+				};
+				duration=parseInt(duration);
+				if(duration<0){
+					alert("Please Input Duration (hour>0) ! \r\n\r\nLine is : "+(i-2)); return;
+				};
+				var arg=1;
+				if(pn=="PAL"){
+					if(frame>=1&&frame<=5)arg=1.4;
+					else if(frame>=6&&frame<=11)arg=1.3;
+					else if(frame>=12&&frame<=17)arg=1.2;
+					else if(frame>=18&&frame<=22)arg=1.1;
+				}else if(pn=="NTSC"){
+					if(frame>=1&&frame<=6)arg=1.4;
+					else if(frame>=7&&frame<=14)arg=1.3;
+					else if(frame>=15&&frame<=21)arg=1.2;
+					else if(frame>=22&&frame<=27)arg=1.1;
+				};
+				var result=resolution*frame*arg*duration*3600/25;				
+				resultall+=result;
+				r.cells[7].innerText=formatsize(result);
+			};
+			document.getElementById("TDResult").innerText=formatsize(resultall);
+		};
+		function formatsize(num){
+			if(num/8>1024*1024)num=Math.round(num*100/8/1024/1024)/100+" GB";
+			else if(num/8>1024)num=Math.round(num*100/8/1024)/100+" MB";
+			else num=Math.round(num*100/8)/100+" KB";
+			return(num);
+		};
+  </script>
+</head>
+<body style="margin:0;">
+	<table cellspacing=0 id=TB>
+		<tr><td nowrap colspan=8 class=tdTitle>
+			<div style="padding:4px;">N9M Bitrate Calculator - H.265</a></div>
+		</td><td class=tdTitle>
+			<button id=bAddChannel>Add Channel</button>
+		</td></tr>
+		<tr><td nowrap colspan=2 class=tdTitle>File size in total: </td><td id=TDResult colspan=7 style="color:red;">0 MB</td></tr>
+		<tr>
+			<td class=tdTitle>Channel</td>
+			<td class=tdTitle>Resolution</td>
+			<td class=tdTitle>PAL/NTSC</td>
+			<td class=tdTitle>Video quality</td>
+			<td class=tdTitle>Frame rate(1-30)</td>
+			<td class=tdTitle>Duration (hour)</td>			
+			<td class=tdTitle>Bitrate(Kbps)</td>
+			<td class=tdTitle>File size</td>
+			<td class=tdTitle>Remove channel</td>
+		</tr>
+	</table>
+
+</body>
+</html>
+
